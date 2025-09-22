@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
@@ -30,6 +33,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	fmt.Println("Connection Successful. Press CTRL+C to exit.")
+
+	ch, err := c.Channel()
+	if err != nil {
+		fmt.Printf("%v", err)
+		os.Exit(1)
+	}
+
+	pubsub.PublishJSON(ch, routing.ExchangePerilDirect,
+		routing.PauseKey, routing.PlayingState{IsPaused: true})
 	<-ctx.Done()
 	fmt.Println(" - Signal received. Shutting down.")
 
