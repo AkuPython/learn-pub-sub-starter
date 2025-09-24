@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -28,11 +29,19 @@ func main() {
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 	*/
-
 	// Go Routine compatible version
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	fmt.Println("Connection Successful. Press CTRL+C to exit.")
+
+	quit := false
+
+	go func() {
+		<-ctx.Done()
+		if !quit {
+			fmt.Println(" - Signal received. Shutting down.")
+		}
+		os.Exit(0)
+	}()
 
 	ch, err := c.Channel()
 	if err != nil {
@@ -40,9 +49,31 @@ func main() {
 		os.Exit(1)
 	}
 
-	pubsub.PublishJSON(ch, routing.ExchangePerilDirect,
-		routing.PauseKey, routing.PlayingState{IsPaused: true})
-	<-ctx.Done()
-	fmt.Println(" - Signal received. Shutting down.")
+	gamelogic.PrintServerHelp()
+
+InfiniteLoop:
+	for {
+		uInput := gamelogic.GetInput()
+		if len(uInput) == 0 {
+			continue
+		}
+		first := uInput[0]
+		switch first {
+		case "pause":
+			fmt.Println("sending pause message")
+			pubsub.PublishJSON(ch, routing.ExchangePerilDirect,
+				routing.PauseKey, routing.PlayingState{IsPaused: true})
+		case "resume":
+			fmt.Println("sending resume message")
+			pubsub.PublishJSON(ch, routing.ExchangePerilDirect,
+				routing.PauseKey, routing.PlayingState{IsPaused: false})
+		case "quit":
+			fmt.Println("exiting game")
+			quit = true
+			break InfiniteLoop
+		default:
+			fmt.Println("unknown command")
+		}
+	}
 
 }
