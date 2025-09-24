@@ -46,8 +46,52 @@ func main() {
 	}
 	defer ch.Close()
 
+	gs := gamelogic.NewGameState(name)
+	quit := false
+	go func() {
+		<-ctx.Done()
+		if !quit {
+			fmt.Println(" - Signal received. Shutting down.")
+		}
+		os.Exit(0)
+	}()
+
+InfiniteLoop:
+	for {
+		uInput := gamelogic.GetInput()
+		if len(uInput) == 0 {
+			continue
+		}
+		first := uInput[0]
+		switch first {
+		case "spawn":
+			err := gs.CommandSpawn(uInput)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+		case "move":
+			move, err := gs.CommandMove(uInput)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println("move worked", move.Player.Username)
+		case "status":
+			gs.CommandStatus()
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("Spamming not allowed yet!")
+		case "quit":
+			gamelogic.PrintQuit()
+			quit = true
+			break InfiniteLoop
+		default:
+			fmt.Println("unknown command")
+		}
+	}
+
 	fmt.Printf("q: %s --- Msgs: %d --- Cons: %d\n", q.Name, q.Messages, q.Consumers)
-	<-ctx.Done()
-	fmt.Println(" - Signal received. Shutting down.")
 
 }

@@ -51,6 +51,19 @@ func main() {
 
 	gamelogic.PrintServerHelp()
 
+	logCh, logQ, err := pubsub.DeclareAndBind(
+		c,
+		"peril_topic",
+		"game_logs",
+		"game_logs.*",
+		pubsub.Durable,
+	)
+	if err != nil {
+		fmt.Printf("Failed to DeclareAndBind logs - %v", err)
+	}
+	defer logCh.Close()
+	fmt.Println("created log queue:", logQ.Name)
+
 InfiniteLoop:
 	for {
 		uInput := gamelogic.GetInput()
