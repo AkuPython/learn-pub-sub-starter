@@ -51,18 +51,17 @@ func main() {
 
 	gamelogic.PrintServerHelp()
 
-	logCh, logQ, err := pubsub.DeclareAndBind(
+	err = pubsub.SubscribeGob(
 		c,
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
 		routing.GameLogSlug+".*",
 		pubsub.Durable,
+		handlerWriteLog(),
 	)
 	if err != nil {
-		fmt.Printf("Failed to DeclareAndBind logs - %v", err)
+		fmt.Printf("Could not subscribe to logs - %v", err)
 	}
-	defer logCh.Close()
-	fmt.Println("created log queue:", logQ.Name)
 
 InfiniteLoop:
 	for {
@@ -89,4 +88,14 @@ InfiniteLoop:
 		}
 	}
 
+}
+
+func handlerWriteLog() func(gl routing.GameLog) pubsub.AckType {
+	return func(gl routing.GameLog) pubsub.AckType {
+		defer fmt.Println("> ")
+		if err := gamelogic.WriteLog(gl); err != nil {
+			return pubsub.NackRequeue
+		}
+		return pubsub.Ack
+	}
 }

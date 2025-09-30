@@ -66,7 +66,7 @@ func main() {
 	err = pubsub.SubscribeJSON(c, routing.ExchangePerilTopic,
 		fmt.Sprintf("%s", routing.WarRecognitionsPrefix),
 		fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix),
-		pubsub.Durable, handlerConsumeWarMoves(gs))
+		pubsub.Durable, handlerConsumeWarMoves(gs, ch))
 	if err != nil {
 		fmt.Printf("%v", err)
 		os.Exit(1)
