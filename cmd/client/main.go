@@ -58,7 +58,15 @@ func main() {
 
 	err = pubsub.SubscribeJSON(c, routing.ExchangePerilTopic,
 		fmt.Sprintf("army_moves.%s", name), fmt.Sprintf("%s.*", routing.ArmyMovesPrefix),
-		pubsub.Transient, handlerMove(gs))
+		pubsub.Transient, handlerMove(gs, ch))
+	if err != nil {
+		fmt.Printf("%v", err)
+		os.Exit(1)
+	}
+	err = pubsub.SubscribeJSON(c, routing.ExchangePerilTopic,
+		fmt.Sprintf("%s", routing.WarRecognitionsPrefix),
+		fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix),
+		pubsub.Durable, handlerConsumeWarMoves(gs))
 	if err != nil {
 		fmt.Printf("%v", err)
 		os.Exit(1)
@@ -118,29 +126,4 @@ InfiniteLoop:
 
 	fmt.Printf("q: %s --- Msgs: %d --- Cons: %d\n", q.Name, q.Messages, q.Consumers)
 
-}
-
-func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) pubsub.AckType {
-	return func(ps routing.PlayingState) pubsub.AckType {
-		defer fmt.Print("> ")
-		gs.HandlePause(ps)
-		return pubsub.Ack
-	}
-}
-
-func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) pubsub.AckType {
-	return func(gl gamelogic.ArmyMove) pubsub.AckType {
-		defer fmt.Print("> ")
-		moveOutcome := gs.HandleMove(gl)
-		switch moveOutcome {
-		case gamelogic.MoveOutcomeSamePlayer:
-			return pubsub.NackDiscard
-		case gamelogic.MoveOutComeSafe:
-			return pubsub.Ack
-		case gamelogic.MoveOutcomeMakeWar:
-			return pubsub.Ack
-		}
-		fmt.Println("error: unknown move outcome")
-		return pubsub.NackDiscard
-	}
 }

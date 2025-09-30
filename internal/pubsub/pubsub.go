@@ -54,7 +54,7 @@ func DeclareAndBind(
 		false,
 		amqp.Table{"x-dead-letter-exchange": "peril_dlx"})
 	if err != nil {
-		return nil, amqp.Queue{}, err
+		return nil, amqp.Queue{}, fmt.Errorf("issue with queueDeclare - %v", err)
 	}
 	ch.QueueBind(queueName, key, exchange, false, nil)
 	return ch, q, nil

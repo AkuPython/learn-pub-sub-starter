@@ -53,9 +53,9 @@ func main() {
 
 	logCh, logQ, err := pubsub.DeclareAndBind(
 		c,
-		"peril_topic",
-		"game_logs",
-		"game_logs.*",
+		routing.ExchangePerilTopic,
+		routing.GameLogSlug,
+		routing.GameLogSlug+".*",
 		pubsub.Durable,
 	)
 	if err != nil {
