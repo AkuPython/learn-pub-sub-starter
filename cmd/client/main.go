@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -114,7 +116,19 @@ InfiniteLoop:
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			fmt.Println("Spamming not allowed yet!")
+			if len(uInput) < 2 {
+				fmt.Println("spam needs a second value")
+			}
+			n, err := strconv.Atoi(uInput[1])
+			if err != nil {
+				fmt.Println("spam second value ")
+			}
+			for range n {
+				malLog := gamelogic.GetMaliciousLog()
+				publishGameLog(ch, name, malLog)
+			}
+			fmt.Println("spammed")
+
 		case "quit":
 			gamelogic.PrintQuit()
 			quit = true
